@@ -5,9 +5,16 @@ import pytest
 from mlflow import MlflowClient
 from sklearn.pipeline import Pipeline
 
+from shopper_intent.api.model_loader import load_champion
+from shopper_intent.config import Settings
 from shopper_intent.models.evaluator import Evaluator
 from shopper_intent.models.registry import ModelRegistry
-from shopper_intent.models.trainer import Trainer, TrainingData, TrainResult
+from shopper_intent.models.trainer import (
+    CONFUSION_MATRIX_ARTIFACT,
+    Trainer,
+    TrainingData,
+    TrainResult,
+)
 from shopper_intent.models.validation import CrossValidation
 
 
@@ -35,6 +42,8 @@ def test_train_and_log_records_params_tags_and_metrics(
     assert run.data.metrics["average_precision"] == pytest.approx(
         result.metrics["average_precision"]
     )
+    confusion = mlflow.artifacts.load_dict(f"runs:/{result.run_id}/{CONFUSION_MATRIX_ARTIFACT}")
+    assert sum(confusion.values()) == len(tiny_data.y_test)
 
 
 def test_registry_registers_run_and_points_alias(
@@ -47,3 +56,17 @@ def test_registry_registers_run_and_points_alias(
 
     client = MlflowClient(tracking_uri=mlflow_tracking_uri)
     assert client.get_model_version_by_alias("test-model", "champion").run_id == result.run_id
+
+
+def test_load_champion_returns_promoted_version_and_threshold(
+    mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
+) -> None:
+    result = _train(mlflow_tracking_uri, logistic_pipeline, tiny_data)
+    registry = ModelRegistry(mlflow_tracking_uri, "test-model", "champion")
+    registry.promote(registry.register(result.run_id))
+    settings = Settings(mlflow_tracking_uri=mlflow_tracking_uri, registered_model_name="test-model")
+
+    loaded = load_champion(settings)
+
+    assert (loaded.version, loaded.threshold) == ("1", 0.5)
+    assert 0.0 <= loaded.purchase_probability(tiny_data.x_test.head(1)) <= 1.0
