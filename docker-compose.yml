@@ -1,0 +1,70 @@
+# Uso:
+#   docker compose up -d mlflow          # servidor MLflow em http://localhost:5000
+#   docker compose run --rm trainer      # dvc repro apontando para o servidor
+#   docker compose --profile api up -d   # API de inferência em http://localhost:8000/docs
+
+x-app-env: &app-env
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    # Dentro da rede do compose o servidor é "mlflow", não localhost.
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+
+services:
+  mlflow:
+    build:
+      context: .
+      target: mlflow
+    image: shopper-intent-mlflow
+    # O comando do servidor (workers, backend SQLite, artefatos) está no CMD do Dockerfile.
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:5000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  trainer:
+    build:
+      context: .
+      target: trainer
+    image: shopper-intent-trainer
+    <<: *app-env
+    # Um init (tini) vira o PID 1. Sem ele o dvc roda como PID 1 e, se o container morrer,
+    # o lock em .dvc/tmp/rwlock parece sempre ativo (todo container novo tem um PID 1).
+    init: true
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    # Código, dados (DVC) e relatórios ficam no host: os outputs do pipeline voltam para o repo.
+    # O remote local do DVC (../dvc-storage) resolve para /dvc-storage dentro do container.
+    volumes:
+      - .:/app
+      - ../dvc-storage:/dvc-storage
+
+  api:
+    build:
+      context: .
+      target: api
+    image: shopper-intent-api
+    <<: *app-env
+    profiles: ["api"]
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # /health responde 503 enquanto não houver modelo com o alias no Registry.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+
+volumes:
+  mlflow-data:
