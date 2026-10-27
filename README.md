@@ -160,7 +160,7 @@ curl -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
   "Month": "Feb", "OperatingSystems": 2, "Browser": 2, "Region": 3, "TrafficType": 1,
   "VisitorType": "Returning_Visitor", "Weekend": false
 }'
-# {"purchase_probability":0.909,"will_purchase":true,"threshold":0.5,"model_version":"5"}
+# {"purchase_probability":0.909,"will_purchase":true,"threshold":0.5,"model_version":"6"}
 ```
 
 - O corpo usa os nomes originais das colunas e é validado pelo Pydantic: campo ausente, campo

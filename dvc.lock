@@ -13,16 +13,20 @@ stages:
       size: 1404
     - path: src/shopper_intent/data/loader.py
       hash: md5
-      md5: 218eb1191d2a332ff021e76aa38ea9d3
-      size: 588
+      md5: 37ee91baf77d3d36f6445625cb5d999f
+      size: 545
     - path: src/shopper_intent/data/preprocess.py
       hash: md5
-      md5: f0dc511363fb15a3bd65d51e9d77e3e7
-      size: 1659
+      md5: 8d01981e0b12a9ef2a4cab1cb7c376b3
+      size: 1708
+    - path: src/shopper_intent/files.py
+      hash: md5
+      md5: 21a2dfbf00c3279ca45041097442bc3f
+      size: 704
     - path: src/shopper_intent/pipelines/preprocess.py
       hash: md5
-      md5: 3a793f13b586588009460346b38b15ef
-      size: 1101
+      md5: 6fac9d3d30ab127c01b824e786cc5bf9
+      size: 823
     params:
       params.yaml:
         data.raw_path: data/raw/online_shoppers_intention.csv
@@ -62,42 +66,47 @@ stages:
       size: 1404
     - path: src/shopper_intent/data/preprocess.py
       hash: md5
-      md5: f0dc511363fb15a3bd65d51e9d77e3e7
-      size: 1659
+      md5: 8d01981e0b12a9ef2a4cab1cb7c376b3
+      size: 1708
     - path: src/shopper_intent/data/versioning.py
       hash: md5
       md5: 579457a69157b827bf9fd3d7824ddca3
       size: 524
     - path: src/shopper_intent/features/build_features.py
       hash: md5
-      md5: 47cb2d5cb38c378fcf1080543f49c1fa
-      size: 1106
+      md5: 01728882f57fcf719f006677066ecd56
+      size: 967
+    - path: src/shopper_intent/files.py
+      hash: md5
+      md5: 21a2dfbf00c3279ca45041097442bc3f
+      size: 704
     - path: src/shopper_intent/models/evaluator.py
       hash: md5
-      md5: 91249e612aa7b8c65ffb43c2b24f7e3a
-      size: 1711
+      md5: e6a4d48f07b30dac4c1a8ebcff7a16eb
+      size: 1630
     - path: src/shopper_intent/models/factory.py
       hash: md5
-      md5: 4d7aee096d68bfeb3909de64db2e0101
-      size: 1523
+      md5: 670bcbd206b322eae9de8a8fb219a13f
+      size: 1551
     - path: src/shopper_intent/models/trainer.py
       hash: md5
-      md5: 5b8479ec75ec46037de49c1c46acd106
-      size: 3084
+      md5: d340dd570eda8fd38edbccfa77dfe129
+      size: 3083
     - path: src/shopper_intent/models/validation.py
       hash: md5
-      md5: 3baff5e861e6a7b0391bbeaca14a71da
-      size: 1011
+      md5: a0e55fd62e3d43bb7fca81bafd139942
+      size: 1327
     - path: src/shopper_intent/pipelines/train.py
       hash: md5
-      md5: 629f1322369f0afb621928aea6033c73
-      size: 3568
+      md5: 700759e08b0195a68e1a44966d7f0de0
+      size: 3367
     params:
       params.yaml:
-        data.raw_path: data/raw/online_shoppers_intention.csv
-        data.target: Revenue
-        data.test_path: data/processed/test.csv
-        data.train_path: data/processed/train.csv
+        data:
+          raw_path: data/raw/online_shoppers_intention.csv
+          train_path: data/processed/train.csv
+          test_path: data/processed/test.csv
+          target: Revenue
         features:
           numeric:
           - Administrative
@@ -147,7 +156,7 @@ stages:
       size: 568361
     - path: reports/best_run.json
       hash: md5
-      md5: 8ee1488aaa15e1ece92ae354a1bbf348
+      md5: 5d911ff5d6b284501cc11972c18e088a
       size: 87
     - path: reports/metrics.json
       hash: md5
@@ -158,31 +167,40 @@ stages:
     deps:
     - path: reports/best_run.json
       hash: md5
-      md5: 8ee1488aaa15e1ece92ae354a1bbf348
+      md5: 5d911ff5d6b284501cc11972c18e088a
       size: 87
     - path: src/shopper_intent/config.py
       hash: md5
       md5: 9c0700c8f9f6f86f623537e1ded51014
       size: 1404
+    - path: src/shopper_intent/files.py
+      hash: md5
+      md5: 21a2dfbf00c3279ca45041097442bc3f
+      size: 704
     - path: src/shopper_intent/models/registry.py
       hash: md5
-      md5: d349e62180e1d19602bd8112f2739480
-      size: 1105
+      md5: cf24ee95883bb47ccd37ddda6e8a24fa
+      size: 2056
     - path: src/shopper_intent/models/trainer.py
       hash: md5
-      md5: 5b8479ec75ec46037de49c1c46acd106
-      size: 3084
+      md5: d340dd570eda8fd38edbccfa77dfe129
+      size: 3083
+    - path: src/shopper_intent/models/validation.py
+      hash: md5
+      md5: a0e55fd62e3d43bb7fca81bafd139942
+      size: 1327
     - path: src/shopper_intent/pipelines/register.py
       hash: md5
-      md5: ef8946503fe29077bac0b871f451cedd
-      size: 1190
+      md5: 06ce1e9cc9d55965ed26b6462af598b8
+      size: 1354
     params:
       params.yaml:
         register:
           output_path: reports/registry.json
         train.best_run_path: reports/best_run.json
+        train.primary_metric: average_precision
     outs:
     - path: reports/registry.json
       hash: md5
-      md5: 0ef1672835f44ed1c70eafd07a83efda
-      size: 126
+      md5: 5454c98c6f73badcecd8614f0292734c
+      size: 146

@@ -1,6 +1,7 @@
 {
   "model": "shopper-intent-model",
-  "version": "3",
+  "version": "6",
   "alias": "champion",
-  "run_id": "61dcb1f734824653a9395ede2c33c124"
+  "promoted": true,
+  "run_id": "6717780b4c5e4b83ad94d568a726d607"
 }
