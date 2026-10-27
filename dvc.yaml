@@ -6,6 +6,7 @@ stages:
       - src/shopper_intent/config.py
       - src/shopper_intent/data/loader.py
       - src/shopper_intent/data/preprocess.py
+      - src/shopper_intent/files.py
       - src/shopper_intent/pipelines/preprocess.py
     params:
       - seed
@@ -23,11 +24,13 @@ stages:
     deps:
       - data/processed/train.csv
       - data/processed/test.csv
+      # Não é lido: o md5 dele vira a tag data_md5 no MLflow (o DVC não aceita o .dvc aqui).
       - data/raw/online_shoppers_intention.csv
       - src/shopper_intent/config.py
       - src/shopper_intent/data/preprocess.py
       - src/shopper_intent/data/versioning.py
       - src/shopper_intent/features/build_features.py
+      - src/shopper_intent/files.py
       - src/shopper_intent/models/evaluator.py
       - src/shopper_intent/models/factory.py
       - src/shopper_intent/models/trainer.py
@@ -35,10 +38,7 @@ stages:
       - src/shopper_intent/pipelines/train.py
     params:
       - seed
-      - data.raw_path
-      - data.train_path
-      - data.test_path
-      - data.target
+      - data
       - features
       - train
     outs:
@@ -54,11 +54,14 @@ stages:
     deps:
       - reports/best_run.json
       - src/shopper_intent/config.py
+      - src/shopper_intent/files.py
       - src/shopper_intent/models/registry.py
       - src/shopper_intent/models/trainer.py
+      - src/shopper_intent/models/validation.py
       - src/shopper_intent/pipelines/register.py
     params:
       - train.best_run_path
+      - train.primary_metric
       - register
     outs:
       - reports/registry.json:
