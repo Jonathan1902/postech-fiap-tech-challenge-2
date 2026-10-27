@@ -1,16 +1,16 @@
 """Leitura do dataset bruto de sessões de navegação."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
 
+@dataclass(frozen=True)
 class DatasetLoader:
     """Carrega o CSV bruto do Online Shoppers Intention."""
 
-    def __init__(self, path: Path) -> None:
-        """Guarda o caminho do arquivo CSV."""
-        self.path = path
+    path: Path
 
     def load(self) -> pd.DataFrame:
         """Lê o CSV e devolve o DataFrame sem nenhuma transformação."""

@@ -1,5 +1,6 @@
 """Catálogo de estimadores candidatos, cada um dentro de um Pipeline sklearn."""
 
+from dataclasses import dataclass
 from typing import Any
 
 from sklearn.base import BaseEstimator, clone
@@ -15,16 +16,18 @@ ESTIMATORS: dict[str, type[BaseEstimator]] = {
 }
 
 
+@dataclass(frozen=True)
 class ModelFactory:
     """Cria os estimadores candidatos a partir da configuração de params.yaml."""
 
-    def __init__(self, candidates: dict[str, dict[str, Any]], seed: int) -> None:
-        """Guarda a configuração dos candidatos e a seed."""
-        unknown = set(candidates) - set(ESTIMATORS)
+    candidates: dict[str, dict[str, Any]]
+    seed: int
+
+    def __post_init__(self) -> None:
+        """Falha cedo se params.yaml citar um estimador fora do catálogo."""
+        unknown = set(self.candidates) - set(ESTIMATORS)
         if unknown:
             raise ValueError(f"Candidatos desconhecidos em params.yaml: {sorted(unknown)}")
-        self.candidates = candidates
-        self.seed = seed
 
     def names(self) -> list[str]:
         """Lista os nomes dos candidatos configurados."""

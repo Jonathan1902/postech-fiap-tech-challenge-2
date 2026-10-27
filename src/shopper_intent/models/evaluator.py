@@ -1,5 +1,7 @@
 """Cálculo das métricas de classificação."""
 
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import (
@@ -12,12 +14,11 @@ from sklearn.metrics import (
 )
 
 
+@dataclass(frozen=True)
 class Evaluator:
     """Calcula as métricas de classificação a partir de probabilidades previstas."""
 
-    def __init__(self, threshold: float = 0.5) -> None:
-        """Guarda o limiar usado para converter probabilidade em classe."""
-        self.threshold = threshold
+    threshold: float = 0.5
 
     def predict_labels(self, y_proba: np.ndarray) -> np.ndarray:
         """Converte probabilidades em classes (0/1) usando o limiar configurado."""
