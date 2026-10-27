@@ -1,0 +1,73 @@
+# Uso:
+#   docker compose up -d mlflow          # servidor MLflow em http://localhost:5000
+#   docker compose run --rm trainer      # dvc repro apontando para o servidor
+#   docker compose --profile api up -d   # API de inferência (depende da etapa 4)
+
+x-app-env: &app-env
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    # Dentro da rede do compose o servidor é "mlflow", não localhost.
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+
+services:
+  mlflow:
+    build:
+      context: .
+      target: mlflow
+    image: shopper-intent-mlflow
+    # --workers 1: o padrão (4) consome ~1,2 GB e faz o trainer sofrer OOM em VMs pequenas.
+    # --serve-artifacts: o servidor recebe os artefatos por HTTP, então os clientes
+    # não precisam montar o volume nem conhecer o caminho do disco.
+    command: >
+      mlflow server
+      --host 0.0.0.0 --port 5000
+      --workers 1
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --serve-artifacts
+      --allowed-hosts "mlflow:5000,localhost:5000,127.0.0.1:5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:5000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  trainer:
+    build:
+      context: .
+      target: trainer
+    image: shopper-intent-trainer
+    <<: *app-env
+    # Um init (tini) vira o PID 1. Sem ele o dvc roda como PID 1 e, se o container morrer,
+    # o lock em .dvc/tmp/rwlock parece sempre ativo (todo container novo tem um PID 1).
+    init: true
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    # Código, dados (DVC) e relatórios ficam no host: os outputs do pipeline voltam para o repo.
+    # O remote local do DVC (../dvc-storage) resolve para /dvc-storage dentro do container.
+    volumes:
+      - .:/app
+      - ../dvc-storage:/dvc-storage
+
+  api:
+    build:
+      context: .
+      target: api
+    image: shopper-intent-api
+    <<: *app-env
+    profiles: ["api"]
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  mlflow-data:
