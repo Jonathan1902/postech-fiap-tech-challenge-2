@@ -17,10 +17,12 @@ from shopper_intent.models.trainer import (
 )
 from shopper_intent.models.validation import CrossValidation
 
+MODEL_NAME = "test-model"
+CV_METRIC = "cv_average_precision"
 
-def _train(uri: str, pipeline: Pipeline, data: TrainingData) -> TrainResult:
+
+def _train(pipeline: Pipeline, data: TrainingData) -> TrainResult:
     trainer = Trainer(
-        tracking_uri=uri,
         experiment_name="test-experiment",
         evaluator=Evaluator(),
         cross_validation=CrossValidation(3, "average_precision", seed=0),
@@ -29,16 +31,24 @@ def _train(uri: str, pipeline: Pipeline, data: TrainingData) -> TrainResult:
     return trainer.train_and_log("logistic_regression", pipeline, {"C": 1.0}, data)
 
 
+def _registry() -> ModelRegistry:
+    return ModelRegistry(MODEL_NAME, "champion", metric=CV_METRIC)
+
+
+def _champion_run_id() -> str:
+    return MlflowClient().get_model_version_by_alias(MODEL_NAME, "champion").run_id
+
+
 def test_train_and_log_records_params_tags_and_metrics(
     mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
 ) -> None:
-    result = _train(mlflow_tracking_uri, logistic_pipeline, tiny_data)
+    result = _train(logistic_pipeline, tiny_data)
 
     run = mlflow.get_run(result.run_id)
     assert run.data.params["seed"] == "0"
     assert run.data.params["cv_folds"] == "3"
     assert run.data.tags["data_md5"] == "abc123"
-    assert run.data.metrics["cv_average_precision"] == pytest.approx(result.cv_score)
+    assert run.data.metrics[CV_METRIC] == pytest.approx(result.cv_score)
     assert run.data.metrics["average_precision"] == pytest.approx(
         result.metrics["average_precision"]
     )
@@ -49,22 +59,44 @@ def test_train_and_log_records_params_tags_and_metrics(
 def test_registry_registers_run_and_points_alias(
     mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
 ) -> None:
-    result = _train(mlflow_tracking_uri, logistic_pipeline, tiny_data)
-    registry = ModelRegistry(mlflow_tracking_uri, "test-model", "champion")
+    result = _train(logistic_pipeline, tiny_data)
+    registry = _registry()
 
-    registry.promote(registry.register(result.run_id))
+    assert registry.promote(registry.register(result.run_id))
+    assert _champion_run_id() == result.run_id
 
-    client = MlflowClient(tracking_uri=mlflow_tracking_uri)
-    assert client.get_model_version_by_alias("test-model", "champion").run_id == result.run_id
+
+def test_register_is_idempotent_for_the_same_run(
+    mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
+) -> None:
+    result = _train(logistic_pipeline, tiny_data)
+    registry = _registry()
+
+    assert registry.register(result.run_id) == registry.register(result.run_id) == "1"
+
+
+def test_promote_keeps_champion_when_new_version_is_worse(
+    mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
+) -> None:
+    champion = _train(logistic_pipeline, tiny_data)
+    challenger = _train(logistic_pipeline, tiny_data)
+    MlflowClient().log_metric(challenger.run_id, CV_METRIC, champion.cv_score - 0.1)
+    registry = _registry()
+    registry.promote(registry.register(champion.run_id))
+
+    promoted = registry.promote(registry.register(challenger.run_id))
+
+    assert not promoted
+    assert _champion_run_id() == champion.run_id
 
 
 def test_load_champion_returns_promoted_version_and_threshold(
     mlflow_tracking_uri: str, logistic_pipeline: Pipeline, tiny_data: TrainingData
 ) -> None:
-    result = _train(mlflow_tracking_uri, logistic_pipeline, tiny_data)
-    registry = ModelRegistry(mlflow_tracking_uri, "test-model", "champion")
+    result = _train(logistic_pipeline, tiny_data)
+    registry = _registry()
     registry.promote(registry.register(result.run_id))
-    settings = Settings(mlflow_tracking_uri=mlflow_tracking_uri, registered_model_name="test-model")
+    settings = Settings(mlflow_tracking_uri=mlflow_tracking_uri, registered_model_name=MODEL_NAME)
 
     loaded = load_champion(settings)
 

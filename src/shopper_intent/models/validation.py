@@ -8,6 +8,11 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 
 
+def cv_metric_name(scoring: str) -> str:
+    """Nome com que a métrica de validação cruzada é logada no MLflow (ex.: cv_roc_auc)."""
+    return f"cv_{scoring}"
+
+
 @dataclass(frozen=True)
 class CrossValidation:
     """Configuração da validação cruzada: nº de folds, métrica (scorer do sklearn) e seed.
@@ -19,6 +24,11 @@ class CrossValidation:
     folds: int
     scoring: str
     seed: int
+
+    @property
+    def metric_name(self) -> str:
+        """Nome da métrica de CV logada em cada run."""
+        return cv_metric_name(self.scoring)
 
     def score(self, pipeline: Pipeline, x: pd.DataFrame, y: pd.Series) -> float:
         """Devolve a média da métrica nos folds de validação do conjunto de treino."""

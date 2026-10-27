@@ -111,7 +111,7 @@ mkdir -p ../dvc-storage && poetry run dvc push
 |---|---|---|
 | `preprocess` | Remove duplicatas, converte tipos e faz split estratificado | `data/processed/{train,test}.csv` |
 | `train` | Escolhe o melhor candidato por validação cruzada no treino, avalia no teste e loga cada run no MLflow | `models/model.pkl`, `reports/metrics.json`, `reports/best_run.json` |
-| `register` | Registra o run escolhido no Model Registry e aplica o alias `champion` | `reports/registry.json` |
+| `register` | Registra o run escolhido no Model Registry e move o alias `champion` se ele não for pior que o atual | `reports/registry.json` |
 
 Parâmetros (seed, split, features, hiperparâmetros) ficam em `params.yaml`; cada estágio
 declara só os parâmetros e arquivos que usa, então o DVC reexecuta apenas o necessário.
@@ -140,6 +140,12 @@ Cada candidato gera um run no experimento `shopper-intent` com:
 O estágio `register` registra o run vencedor como uma nova versão de `shopper-intent-model` e
 move o alias `champion` para ela. A API sempre carrega a versão apontada pelo alias.
 
+- **Gate de qualidade:** o alias só se move se a `cv_average_precision` da nova versão for maior
+  ou igual à do `champion` atual; senão o champion é mantido e `reports/registry.json` registra
+  `"promoted": false`.
+- **Idempotente:** se o run já tiver sido registrado, a versão existente é reaproveitada, então
+  reexecutar só o `register` não cria versões duplicadas.
+
 **Ordem para rastreabilidade:** commite o código **antes** de rodar `dvc repro`, para que a
 tag de commit gravada em cada run aponte para o código que gerou o modelo. Depois, commite
 `dvc.lock` e `reports/`.
@@ -154,7 +160,7 @@ curl -X POST localhost:8000/predict -H "Content-Type: application/json" -d '{
   "Month": "Feb", "OperatingSystems": 2, "Browser": 2, "Region": 3, "TrafficType": 1,
   "VisitorType": "Returning_Visitor", "Weekend": false
 }'
-# {"purchase_probability":0.909,"will_purchase":true,"threshold":0.5,"model_version":"3"}
+# {"purchase_probability":0.909,"will_purchase":true,"threshold":0.5,"model_version":"5"}
 ```
 
 - O corpo usa os nomes originais das colunas e é validado pelo Pydantic: campo ausente, campo
@@ -197,6 +203,7 @@ git add dvc.lock reports/ && git commit -m "chore: reexecuta pipeline no Docker"
 ```
 src/shopper_intent/
 ├── config.py               # Settings (.env) e load_params (params.yaml)
+├── files.py                # gravação de JSON/CSV dos estágios
 ├── data/                   # loader, preprocess (limpeza e split), versioning (md5 do DVC)
 ├── features/               # FeatureBuilder: ColumnTransformer (scaler + one-hot)
 ├── models/                 # factory, validation (CV), evaluator, trainer (MLflow), registry
@@ -210,7 +217,7 @@ dvc.yaml · params.yaml · Dockerfile · docker-compose.yml · pyproject.toml ·
 ## Desenvolvimento
 
 ```bash
-poetry run ruff check .          # lint (inclui o notebook)
+poetry run ruff check .          # lint, docstrings (D) e type hints (ANN); inclui o notebook
 poetry run ruff format --check . # formatação
 poetry run pytest --cov          # testes com cobertura
 ```

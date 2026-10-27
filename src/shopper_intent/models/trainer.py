@@ -38,9 +38,11 @@ class TrainResult:
 
 @dataclass(frozen=True)
 class Trainer:
-    """Treina um Pipeline e loga parâmetros, métricas, tags e modelo no MLflow."""
+    """Treina um Pipeline e loga parâmetros, métricas, tags e modelo no MLflow.
 
-    tracking_uri: str
+    Usa a tracking URI global do MLflow, configurada pelo entrypoint.
+    """
+
     experiment_name: str
     evaluator: Evaluator
     cross_validation: CrossValidation
@@ -50,13 +52,12 @@ class Trainer:
         self, name: str, pipeline: Pipeline, params: dict[str, Any], data: TrainingData
     ) -> TrainResult:
         """Valida no treino (CV), treina, avalia no teste e loga um run no MLflow."""
-        mlflow.set_tracking_uri(self.tracking_uri)
         mlflow.set_experiment(self.experiment_name)
         with mlflow.start_run(run_name=name) as run:
             mlflow.set_tags(self.tags)
             mlflow.log_params({**self._run_params(name), **params})
             cv_score = self.cross_validation.score(pipeline, data.x_train, data.y_train)
-            mlflow.log_metric(f"cv_{self.cross_validation.scoring}", cv_score)
+            mlflow.log_metric(self.cross_validation.metric_name, cv_score)
             pipeline.fit(data.x_train, data.y_train)
             y_proba = pipeline.predict_proba(data.x_test)[:, 1]
             metrics = self.evaluator.evaluate(data.y_test, y_proba)
