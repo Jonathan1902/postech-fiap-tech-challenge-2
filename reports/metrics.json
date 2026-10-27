@@ -1,5 +1,6 @@
 {
   "best_model": "hist_gradient_boosting",
+  "cv_average_precision": 0.7420381603108619,
   "average_precision": 0.741486192212992,
   "roc_auc": 0.933789594399762,
   "f1": 0.6553552492046659,
