@@ -12,6 +12,7 @@ from shopper_intent.models.evaluator import Evaluator
 from shopper_intent.models.validation import CrossValidation
 
 MODEL_ARTIFACT_NAME = "model"
+CONFUSION_MATRIX_ARTIFACT = "confusion_matrix.json"
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,8 @@ class Trainer:
             y_proba = pipeline.predict_proba(data.x_test)[:, 1]
             metrics = self.evaluator.evaluate(data.y_test, y_proba)
             mlflow.log_metrics(metrics)
+            confusion = self.evaluator.confusion(data.y_test, y_proba)
+            mlflow.log_dict(confusion, CONFUSION_MATRIX_ARTIFACT)
             self._log_model(pipeline, data.x_train)
         return TrainResult(name, run.info.run_id, cv_score, metrics, pipeline)
 
