@@ -22,7 +22,6 @@ class Settings(BaseSettings):
     mlflow_experiment_name: str = "shopper-intent"
     registered_model_name: str = "shopper-intent-model"
     model_alias: str = "champion"
-    data_raw_path: Path = Path("data/raw/online_shoppers_intention.csv")
 
 
 def load_params(path: Path = DEFAULT_PARAMS_PATH) -> dict[str, Any]:
