@@ -15,7 +15,7 @@ def _sample(rows: int = 100) -> pd.DataFrame:
     )
 
 
-def test_remove_duplicates_drops_repeated_rows():
+def test_remove_duplicates_drops_repeated_rows() -> None:
     df = pd.concat([_sample(10), _sample(10).head(3)], ignore_index=True)
 
     result = Preprocessor().remove_duplicates(df)
@@ -24,14 +24,14 @@ def test_remove_duplicates_drops_repeated_rows():
     assert not result.duplicated().any()
 
 
-def test_cast_types_converts_booleans_to_int():
+def test_cast_types_converts_booleans_to_int() -> None:
     result = Preprocessor().cast_types(_sample(10))
 
     assert result["Weekend"].dtype == int
     assert set(result["Revenue"].unique()) <= {0, 1}
 
 
-def test_split_is_stratified_and_reproducible():
+def test_split_is_stratified_and_reproducible() -> None:
     df = Preprocessor().cast_types(_sample())
     splitter = StratifiedSplitter(test_size=0.2, seed=42)
 
@@ -43,7 +43,7 @@ def test_split_is_stratified_and_reproducible():
     pd.testing.assert_frame_equal(train, train_again)
 
 
-def test_split_features_target_separates_columns():
+def test_split_features_target_separates_columns() -> None:
     x, y = split_features_target(_sample(10), "Revenue")
 
     assert "Revenue" not in x.columns

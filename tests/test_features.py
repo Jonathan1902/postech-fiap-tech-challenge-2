@@ -5,7 +5,7 @@ import pandas as pd
 from shopper_intent.features.build_features import FeatureBuilder
 
 
-def test_build_scales_numeric_one_hot_encodes_and_passes_through_rest():
+def test_build_scales_numeric_one_hot_encodes_and_passes_through_rest() -> None:
     df = pd.DataFrame(
         {
             "PageValues": [0.0, 10.0, 20.0, 30.0],
@@ -22,7 +22,7 @@ def test_build_scales_numeric_one_hot_encodes_and_passes_through_rest():
     assert abs(result[:, 0].mean()) < 1e-9
 
 
-def test_build_ignores_unseen_categories_at_transform_time():
+def test_build_ignores_unseen_categories_at_transform_time() -> None:
     train = pd.DataFrame({"PageValues": [1.0, 2.0], "Browser": [1, 2]})
     transformer = FeatureBuilder(["PageValues"], ["Browser"]).build().fit(train)
 

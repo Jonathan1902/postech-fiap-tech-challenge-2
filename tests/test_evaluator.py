@@ -7,7 +7,7 @@ import pytest
 from shopper_intent.models.evaluator import Evaluator
 
 
-def test_evaluate_known_case():
+def test_evaluate_known_case() -> None:
     y_true = pd.Series([0, 0, 1, 1])
     y_proba = np.array([0.1, 0.6, 0.4, 0.9])
 
@@ -21,7 +21,7 @@ def test_evaluate_known_case():
     assert metrics["average_precision"] == pytest.approx(0.8333333)
 
 
-def test_evaluate_without_positive_predictions_does_not_raise():
+def test_evaluate_without_positive_predictions_does_not_raise() -> None:
     metrics = Evaluator(threshold=0.99).evaluate(pd.Series([0, 1]), np.array([0.1, 0.2]))
 
     assert metrics["precision"] == 0.0

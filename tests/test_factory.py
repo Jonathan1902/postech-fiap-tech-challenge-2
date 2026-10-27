@@ -11,11 +11,11 @@ def _factory() -> ModelFactory:
     return ModelFactory({"logistic_regression": {"C": 0.5, "max_iter": 200}}, seed=7)
 
 
-def test_names_lists_configured_candidates():
+def test_names_lists_configured_candidates() -> None:
     assert _factory().names() == ["logistic_regression"]
 
 
-def test_create_builds_pipeline_with_seed_and_params():
+def test_create_builds_pipeline_with_seed_and_params() -> None:
     preprocessor = FeatureBuilder(["PageValues"], ["Browser"]).build()
 
     pipeline = _factory().create("logistic_regression", preprocessor)
@@ -25,7 +25,7 @@ def test_create_builds_pipeline_with_seed_and_params():
     assert pipeline.named_steps["preprocess"] is not preprocessor
 
 
-def test_all_catalog_estimators_fit_and_predict_proba():
+def test_all_catalog_estimators_fit_and_predict_proba() -> None:
     df = pd.DataFrame({"PageValues": [0.0, 1.0, 2.0, 3.0] * 5, "Browser": [1, 2, 1, 2] * 5})
     y = pd.Series([0, 1, 0, 1] * 5)
     preprocessor = FeatureBuilder(["PageValues"], ["Browser"]).build()
@@ -36,6 +36,6 @@ def test_all_catalog_estimators_fit_and_predict_proba():
         assert proba.shape == (20, 2)
 
 
-def test_unknown_candidate_raises():
+def test_unknown_candidate_raises() -> None:
     with pytest.raises(ValueError):
         ModelFactory({"magic_forest": {}}, seed=1)
