@@ -1,0 +1,29 @@
+# Controle de versão e ambiente local
+.git
+.gitignore
+.venv
+.env
+.env.*
+!.env.example
+
+# Caches de ferramentas
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Dados, modelos e artefatos de experimentos (não entram na imagem)
+data/
+models/
+reports/
+mlruns/
+mlflow.db
+*.csv
+
+# Código que só serve ao desenvolvimento
+notebooks/
+tests/
