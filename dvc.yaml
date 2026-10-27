@@ -1,0 +1,49 @@
+stages:
+  preprocess:
+    cmd: python -m shopper_intent.pipelines.preprocess
+    deps:
+      - data/raw/online_shoppers_intention.csv
+      - src/shopper_intent/config.py
+      - src/shopper_intent/data
+      - src/shopper_intent/pipelines/preprocess.py
+    params:
+      - seed
+      - data
+      - split
+    outs:
+      - data/processed/train.csv
+      - data/processed/test.csv
+
+  train:
+    cmd: python -m shopper_intent.pipelines.train
+    deps:
+      - data/processed/train.csv
+      - data/processed/test.csv
+      - src/shopper_intent/config.py
+      - src/shopper_intent/features
+      - src/shopper_intent/models
+      - src/shopper_intent/pipelines/train.py
+    params:
+      - seed
+      - data
+      - features
+      - train
+    outs:
+      - models/model.pkl
+    metrics:
+      - reports/metrics.json:
+          cache: false
+
+  register:
+    cmd: python -m shopper_intent.pipelines.register
+    deps:
+      - reports/metrics.json
+      - src/shopper_intent/config.py
+      - src/shopper_intent/models/registry.py
+      - src/shopper_intent/pipelines/register.py
+    params:
+      - train.primary_metric
+      - register
+    outs:
+      - reports/registry.json:
+          cache: false
