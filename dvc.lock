@@ -74,16 +74,16 @@ stages:
       size: 1106
     - path: src/shopper_intent/models/evaluator.py
       hash: md5
-      md5: 6d90ecb84ee747409805e14b1a81c965
-      size: 1116
+      md5: 91249e612aa7b8c65ffb43c2b24f7e3a
+      size: 1711
     - path: src/shopper_intent/models/factory.py
       hash: md5
       md5: 4d7aee096d68bfeb3909de64db2e0101
       size: 1523
     - path: src/shopper_intent/models/trainer.py
       hash: md5
-      md5: 6f6783e0981d8cedc7d8c39cfeac4678
-      size: 2895
+      md5: 5b8479ec75ec46037de49c1c46acd106
+      size: 3084
     - path: src/shopper_intent/models/validation.py
       hash: md5
       md5: 3baff5e861e6a7b0391bbeaca14a71da
@@ -147,7 +147,7 @@ stages:
       size: 568361
     - path: reports/best_run.json
       hash: md5
-      md5: 3066083f670c8e89c92002551d6e758b
+      md5: 8ee1488aaa15e1ece92ae354a1bbf348
       size: 87
     - path: reports/metrics.json
       hash: md5
@@ -158,7 +158,7 @@ stages:
     deps:
     - path: reports/best_run.json
       hash: md5
-      md5: 3066083f670c8e89c92002551d6e758b
+      md5: 8ee1488aaa15e1ece92ae354a1bbf348
       size: 87
     - path: src/shopper_intent/config.py
       hash: md5
@@ -170,8 +170,8 @@ stages:
       size: 1105
     - path: src/shopper_intent/models/trainer.py
       hash: md5
-      md5: 6f6783e0981d8cedc7d8c39cfeac4678
-      size: 2895
+      md5: 5b8479ec75ec46037de49c1c46acd106
+      size: 3084
     - path: src/shopper_intent/pipelines/register.py
       hash: md5
       md5: ef8946503fe29077bac0b871f451cedd
@@ -184,5 +184,5 @@ stages:
     outs:
     - path: reports/registry.json
       hash: md5
-      md5: 040a96026c138711330472ca7f50f4c5
+      md5: 0ef1672835f44ed1c70eafd07a83efda
       size: 126

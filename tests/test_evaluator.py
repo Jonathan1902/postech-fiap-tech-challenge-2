@@ -26,3 +26,12 @@ def test_evaluate_without_positive_predictions_does_not_raise() -> None:
 
     assert metrics["precision"] == 0.0
     assert metrics["recall"] == 0.0
+
+
+def test_confusion_counts_match_threshold() -> None:
+    y_true = pd.Series([0, 0, 1, 1])
+    y_proba = np.array([0.1, 0.6, 0.4, 0.9])
+
+    confusion = Evaluator(threshold=0.5).confusion(y_true, y_proba)
+
+    assert confusion == {"tn": 1, "fp": 1, "fn": 1, "tp": 1}
