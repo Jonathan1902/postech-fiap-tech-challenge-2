@@ -1,4 +1,6 @@
-"""Limpeza do dataset: duplicatas, tipos e codificação do alvo."""
+"""Limpeza do dataset (duplicatas, tipos) e split estratificado treino/teste."""
+
+from dataclasses import dataclass
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -10,23 +12,26 @@ BOOLEAN_COLUMNS = ("Weekend", TARGET_COLUMN)
 class Preprocessor:
     """Aplica a limpeza que roda antes do split treino/teste."""
 
+    def clean(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Remove duplicatas e converte as colunas booleanas para 0/1."""
+        return self.cast_types(self.remove_duplicates(df))
+
     def remove_duplicates(self, df: pd.DataFrame) -> pd.DataFrame:
         """Remove linhas duplicadas do DataFrame."""
         return df.drop_duplicates().reset_index(drop=True)
 
     def cast_types(self, df: pd.DataFrame) -> pd.DataFrame:
         """Converte Weekend e Revenue para inteiro (0/1)."""
-        return df.astype({column: int for column in BOOLEAN_COLUMNS})
+        return df.astype(dict.fromkeys(BOOLEAN_COLUMNS, int))
 
 
+@dataclass(frozen=True)
 class StratifiedSplitter:
     """Divide o dataset em treino e teste de forma estratificada pelo alvo."""
 
-    def __init__(self, test_size: float, seed: int, target: str = TARGET_COLUMN) -> None:
-        """Guarda a proporção de teste, a seed de reprodutibilidade e o nome do alvo."""
-        self.test_size = test_size
-        self.seed = seed
-        self.target = target
+    test_size: float
+    seed: int
+    target: str = TARGET_COLUMN
 
     def split(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Devolve os DataFrames de treino e de teste, mantendo a proporção do alvo."""

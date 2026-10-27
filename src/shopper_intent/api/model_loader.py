@@ -36,12 +36,12 @@ class LoadedModel:
 
 def load_champion(settings: Settings) -> LoadedModel:
     """Carrega a versão apontada pelo alias e o limiar logado no run que a gerou."""
-    client = MlflowClient(tracking_uri=settings.mlflow_tracking_uri)
+    mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
+    client = MlflowClient()
     model_version = client.get_model_version_by_alias(
         settings.registered_model_name, settings.model_alias
     )
     params = client.get_run(model_version.run_id).data.params
-    mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
     # Carrega pelo número da versão (e não pelo alias) para que versão e modelo sejam a mesma.
     classifier = mlflow.sklearn.load_model(
         f"models:/{settings.registered_model_name}/{model_version.version}"

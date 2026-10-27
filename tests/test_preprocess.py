@@ -31,6 +31,15 @@ def test_cast_types_converts_booleans_to_int() -> None:
     assert set(result["Revenue"].unique()) <= {0, 1}
 
 
+def test_clean_deduplicates_and_casts_types() -> None:
+    df = pd.concat([_sample(10), _sample(10).head(3)], ignore_index=True)
+
+    result = Preprocessor().clean(df)
+
+    assert len(result) == 10
+    assert result["Revenue"].dtype == int
+
+
 def test_split_is_stratified_and_reproducible() -> None:
     df = Preprocessor().cast_types(_sample())
     splitter = StratifiedSplitter(test_size=0.2, seed=42)

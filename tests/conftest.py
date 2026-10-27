@@ -1,7 +1,9 @@
 """Fixtures compartilhadas: dados pequenos e um MLflow isolado em SQLite temporário."""
 
+from collections.abc import Iterator
 from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 import pytest
@@ -40,7 +42,11 @@ def logistic_pipeline() -> Pipeline:
 
 
 @pytest.fixture
-def mlflow_tracking_uri(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> str:
-    """URI de um MLflow em SQLite temporário; artefatos ficam dentro de tmp_path."""
+def mlflow_tracking_uri(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
+    """Aponta o MLflow para um SQLite temporário; artefatos ficam dentro de tmp_path."""
     monkeypatch.chdir(tmp_path)
-    return f"sqlite:///{tmp_path / 'mlflow.db'}"
+    uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    previous = mlflow.get_tracking_uri()
+    mlflow.set_tracking_uri(uri)
+    yield uri
+    mlflow.set_tracking_uri(previous)

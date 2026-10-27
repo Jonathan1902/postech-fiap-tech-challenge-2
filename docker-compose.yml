@@ -17,17 +17,7 @@ services:
       context: .
       target: mlflow
     image: shopper-intent-mlflow
-    # --workers 1: o padrão (4) consome ~1,2 GB e faz o trainer sofrer OOM em VMs pequenas.
-    # --serve-artifacts: o servidor recebe os artefatos por HTTP, então os clientes
-    # não precisam montar o volume nem conhecer o caminho do disco.
-    command: >
-      mlflow server
-      --host 0.0.0.0 --port 5000
-      --workers 1
-      --backend-store-uri sqlite:////mlflow/mlflow.db
-      --artifacts-destination /mlflow/artifacts
-      --serve-artifacts
-      --allowed-hosts "mlflow:5000,localhost:5000,127.0.0.1:5000"
+    # O comando do servidor (workers, backend SQLite, artefatos) está no CMD do Dockerfile.
     ports:
       - "5000:5000"
     volumes:
