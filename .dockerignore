@@ -23,6 +23,8 @@ reports/
 mlruns/
 mlflow.db
 *.csv
+.dvc/cache/
+.dvc/tmp/
 
 # Código que só serve ao desenvolvimento
 notebooks/

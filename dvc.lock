@@ -143,11 +143,11 @@ stages:
     outs:
     - path: models/model.pkl
       hash: md5
-      md5: b57ea40ec0f4fb353f094b56e0463d37
+      md5: f6b62c1cff19f0202dd19c72e9e27811
       size: 568361
     - path: reports/best_run.json
       hash: md5
-      md5: db508bf0e93e6a4372fea6c907c6e435
+      md5: 3066083f670c8e89c92002551d6e758b
       size: 87
     - path: reports/metrics.json
       hash: md5
@@ -158,7 +158,7 @@ stages:
     deps:
     - path: reports/best_run.json
       hash: md5
-      md5: db508bf0e93e6a4372fea6c907c6e435
+      md5: 3066083f670c8e89c92002551d6e758b
       size: 87
     - path: src/shopper_intent/config.py
       hash: md5
@@ -184,5 +184,5 @@ stages:
     outs:
     - path: reports/registry.json
       hash: md5
-      md5: 70f07a05ca977d765c9cdade97ab635b
+      md5: 040a96026c138711330472ca7f50f4c5
       size: 126
