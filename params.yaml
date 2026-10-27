@@ -31,10 +31,13 @@ features:
     - VisitorType
 
 train:
+  # Nome de scorer do sklearn: usado na validação cruzada que escolhe o melhor candidato.
   primary_metric: average_precision
+  cv_folds: 5
   threshold: 0.5
   model_path: models/model.pkl
   metrics_path: reports/metrics.json
+  best_run_path: reports/best_run.json
   models:
     logistic_regression:
       C: 1.0

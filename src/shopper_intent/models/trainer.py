@@ -1,6 +1,6 @@
 """Treino de cada candidato e registro do run no MLflow."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import mlflow
@@ -9,6 +9,7 @@ from mlflow.models import infer_signature
 from sklearn.pipeline import Pipeline
 
 from shopper_intent.models.evaluator import Evaluator
+from shopper_intent.models.validation import CrossValidation
 
 MODEL_ARTIFACT_NAME = "model"
 
@@ -29,37 +30,47 @@ class TrainResult:
 
     name: str
     run_id: str
+    cv_score: float
     metrics: dict[str, float]
     pipeline: Pipeline
 
 
+@dataclass(frozen=True)
 class Trainer:
-    """Treina um Pipeline e loga parâmetros, métricas e modelo no MLflow."""
+    """Treina um Pipeline e loga parâmetros, métricas, tags e modelo no MLflow."""
 
-    def __init__(self, tracking_uri: str, experiment_name: str, evaluator: Evaluator) -> None:
-        """Guarda a URI do servidor MLflow, o nome do experimento e o avaliador."""
-        self.tracking_uri = tracking_uri
-        self.experiment_name = experiment_name
-        self.evaluator = evaluator
+    tracking_uri: str
+    experiment_name: str
+    evaluator: Evaluator
+    cross_validation: CrossValidation
+    tags: dict[str, str] = field(default_factory=dict)
 
     def train_and_log(
-        self,
-        name: str,
-        pipeline: Pipeline,
-        params: dict[str, Any],
-        data: TrainingData,
+        self, name: str, pipeline: Pipeline, params: dict[str, Any], data: TrainingData
     ) -> TrainResult:
-        """Treina o candidato, avalia no teste e loga um run no MLflow."""
+        """Valida no treino (CV), treina, avalia no teste e loga um run no MLflow."""
         mlflow.set_tracking_uri(self.tracking_uri)
         mlflow.set_experiment(self.experiment_name)
         with mlflow.start_run(run_name=name) as run:
-            mlflow.log_params({"model": name, **params})
+            mlflow.set_tags(self.tags)
+            mlflow.log_params({**self._run_params(name), **params})
+            cv_score = self.cross_validation.score(pipeline, data.x_train, data.y_train)
+            mlflow.log_metric(f"cv_{self.cross_validation.scoring}", cv_score)
             pipeline.fit(data.x_train, data.y_train)
             y_proba = pipeline.predict_proba(data.x_test)[:, 1]
             metrics = self.evaluator.evaluate(data.y_test, y_proba)
             mlflow.log_metrics(metrics)
             self._log_model(pipeline, data.x_train)
-        return TrainResult(name, run.info.run_id, metrics, pipeline)
+        return TrainResult(name, run.info.run_id, cv_score, metrics, pipeline)
+
+    def _run_params(self, name: str) -> dict[str, Any]:
+        """Parâmetros comuns a todos os runs: modelo, seed, folds e limiar."""
+        return {
+            "model": name,
+            "seed": self.cross_validation.seed,
+            "cv_folds": self.cross_validation.folds,
+            "threshold": self.evaluator.threshold,
+        }
 
     def _log_model(self, pipeline: Pipeline, x_sample: pd.DataFrame) -> None:
         """Loga o Pipeline com assinatura e exemplo de entrada."""

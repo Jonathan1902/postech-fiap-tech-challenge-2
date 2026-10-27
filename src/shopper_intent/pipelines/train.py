@@ -9,10 +9,12 @@ import pandas as pd
 
 from shopper_intent.config import Settings, load_params
 from shopper_intent.data.preprocess import split_features_target
+from shopper_intent.data.versioning import dvc_file_for, read_dvc_md5
 from shopper_intent.features.build_features import FeatureBuilder
 from shopper_intent.models.evaluator import Evaluator
 from shopper_intent.models.factory import ModelFactory
 from shopper_intent.models.trainer import Trainer, TrainingData, TrainResult
+from shopper_intent.models.validation import CrossValidation
 
 
 def _load_training_data(data_params: dict[str, Any]) -> TrainingData:
@@ -23,41 +25,57 @@ def _load_training_data(data_params: dict[str, Any]) -> TrainingData:
     return TrainingData(x_train, y_train, x_test, y_test)
 
 
+def _build_trainer(params: dict[str, Any], settings: Settings) -> Trainer:
+    """Monta o Trainer com avaliador, validação cruzada e a versão do dataset como tag."""
+    train_params = params["train"]
+    data_md5 = read_dvc_md5(dvc_file_for(Path(params["data"]["raw_path"])))
+    return Trainer(
+        tracking_uri=settings.mlflow_tracking_uri,
+        experiment_name=settings.mlflow_experiment_name,
+        evaluator=Evaluator(train_params["threshold"]),
+        cross_validation=CrossValidation(
+            train_params["cv_folds"], train_params["primary_metric"], params["seed"]
+        ),
+        tags={"data_md5": data_md5},
+    )
+
+
 def _train_candidates(params: dict[str, Any], data: TrainingData) -> list[TrainResult]:
     """Treina todos os candidatos de params.yaml e loga cada um no MLflow."""
-    settings = Settings()
-    train_params = params["train"]
+    candidates = params["train"]["models"]
     features = params["features"]
     preprocessor = FeatureBuilder(features["numeric"], features["categorical"]).build()
-    factory = ModelFactory(train_params["models"], params["seed"])
-    trainer = Trainer(
-        settings.mlflow_tracking_uri,
-        settings.mlflow_experiment_name,
-        Evaluator(train_params["threshold"]),
-    )
+    factory = ModelFactory(candidates, params["seed"])
+    trainer = _build_trainer(params, Settings())
     return [
-        trainer.train_and_log(
-            name, factory.create(name, preprocessor), train_params["models"][name], data
-        )
+        trainer.train_and_log(name, factory.create(name, preprocessor), candidates[name], data)
         for name in factory.names()
     ]
 
 
-def _save_best(best: TrainResult, model_path: Path, metrics_path: Path) -> None:
-    """Grava o melhor Pipeline em disco e suas métricas em JSON."""
-    for path in (model_path, metrics_path):
-        path.parent.mkdir(parents=True, exist_ok=True)
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    """Grava o dicionário em JSON, criando a pasta de destino se preciso."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _save_best(best: TrainResult, train_params: dict[str, Any]) -> None:
+    """Grava o melhor Pipeline, suas métricas e o run_id que o estágio register promove."""
+    model_path = Path(train_params["model_path"])
+    model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(best.pipeline, model_path)
-    metrics_path.write_text(json.dumps({"best_model": best.name, **best.metrics}, indent=2))
+    cv_metric = f"cv_{train_params['primary_metric']}"
+    metrics = {"best_model": best.name, cv_metric: best.cv_score, **best.metrics}
+    _write_json(Path(train_params["metrics_path"]), metrics)
+    _write_json(Path(train_params["best_run_path"]), {"model": best.name, "run_id": best.run_id})
 
 
 def main() -> None:
-    """Treina cada candidato de params.yaml, loga no MLflow e grava reports/metrics.json."""
+    """Treina cada candidato, escolhe o melhor pela CV e grava modelo, métricas e run_id."""
     params = load_params()
-    train_params = params["train"]
     results = _train_candidates(params, _load_training_data(params["data"]))
-    best = max(results, key=lambda result: result.metrics[train_params["primary_metric"]])
-    _save_best(best, Path(train_params["model_path"]), Path(train_params["metrics_path"]))
+    best = max(results, key=lambda result: result.cv_score)
+    _save_best(best, params["train"])
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Entrypoint do estágio `register` do DVC: melhor run -> Model Registry (alias champion)."""
+"""Entrypoint do estágio `register` do DVC: run escolhido no train -> Registry (alias)."""
 
 import json
 from pathlib import Path
@@ -7,22 +7,25 @@ from shopper_intent.config import Settings, load_params
 from shopper_intent.models.registry import ModelRegistry
 
 
+def read_best_run_id(path: Path) -> str:
+    """Lê o run_id do melhor candidato gravado pelo estágio train."""
+    return str(json.loads(path.read_text(encoding="utf-8"))["run_id"])
+
+
 def main() -> None:
-    """Escolhe o melhor run pela métrica primária, registra e aplica o alias."""
+    """Registra o run escolhido pelo train, aplica o alias e grava um resumo em JSON."""
     params = load_params()
     settings = Settings()
     registry = ModelRegistry(
         settings.mlflow_tracking_uri, settings.registered_model_name, settings.model_alias
     )
-    run_id = registry.best_run_id(
-        settings.mlflow_experiment_name, params["train"]["primary_metric"]
-    )
+    run_id = read_best_run_id(Path(params["train"]["best_run_path"]))
     version = registry.register(run_id)
     registry.promote(version)
     output = Path(params["register"]["output_path"])
     output.parent.mkdir(parents=True, exist_ok=True)
     summary = {"model": registry.model_name, "version": version, "alias": registry.alias}
-    output.write_text(json.dumps({**summary, "run_id": run_id}, indent=2))
+    output.write_text(json.dumps({**summary, "run_id": run_id}, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

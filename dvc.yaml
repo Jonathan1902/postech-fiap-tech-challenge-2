@@ -4,11 +4,15 @@ stages:
     deps:
       - data/raw/online_shoppers_intention.csv
       - src/shopper_intent/config.py
-      - src/shopper_intent/data
+      - src/shopper_intent/data/loader.py
+      - src/shopper_intent/data/preprocess.py
       - src/shopper_intent/pipelines/preprocess.py
     params:
       - seed
-      - data
+      - data.raw_path
+      - data.train_path
+      - data.test_path
+      - data.target
       - split
     outs:
       - data/processed/train.csv
@@ -19,17 +23,28 @@ stages:
     deps:
       - data/processed/train.csv
       - data/processed/test.csv
+      - data/raw/online_shoppers_intention.csv
       - src/shopper_intent/config.py
-      - src/shopper_intent/features
-      - src/shopper_intent/models
+      - src/shopper_intent/data/preprocess.py
+      - src/shopper_intent/data/versioning.py
+      - src/shopper_intent/features/build_features.py
+      - src/shopper_intent/models/evaluator.py
+      - src/shopper_intent/models/factory.py
+      - src/shopper_intent/models/trainer.py
+      - src/shopper_intent/models/validation.py
       - src/shopper_intent/pipelines/train.py
     params:
       - seed
-      - data
+      - data.raw_path
+      - data.train_path
+      - data.test_path
+      - data.target
       - features
       - train
     outs:
       - models/model.pkl
+      - reports/best_run.json:
+          cache: false
     metrics:
       - reports/metrics.json:
           cache: false
@@ -37,12 +52,13 @@ stages:
   register:
     cmd: python -m shopper_intent.pipelines.register
     deps:
-      - reports/metrics.json
+      - reports/best_run.json
       - src/shopper_intent/config.py
       - src/shopper_intent/models/registry.py
+      - src/shopper_intent/models/trainer.py
       - src/shopper_intent/pipelines/register.py
     params:
-      - train.primary_metric
+      - train.best_run_path
       - register
     outs:
       - reports/registry.json:
