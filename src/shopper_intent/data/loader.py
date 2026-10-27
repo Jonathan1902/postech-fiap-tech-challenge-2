@@ -14,4 +14,6 @@ class DatasetLoader:
 
     def load(self) -> pd.DataFrame:
         """Lê o CSV e devolve o DataFrame sem nenhuma transformação."""
-        raise NotImplementedError
+        if not self.path.is_file():
+            raise FileNotFoundError(f"Dataset não encontrado: {self.path} (rode `dvc pull`).")
+        return pd.read_csv(self.path)
