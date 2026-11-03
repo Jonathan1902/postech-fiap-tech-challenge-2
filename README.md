@@ -88,22 +88,30 @@ O dataset bruto é versionado pelo DVC: o Git guarda só o ponteiro
 `data/raw/online_shoppers_intention.csv.dvc` (hash md5); o arquivo fica no cache do DVC e
 no remote.
 
-**Remote atual: local** (`../dvc-storage`, pasta irmã do repositório). A migração para um
-remote em nuvem (DagsHub) está planejada.
+**Remote: [DagsHub](https://dagshub.com/Jonathan1902/postech-fiap-tech-challenge-2)**
+(`dagshub`, configurado em `.dvc/config`). O repositório é público, mas o DagsHub exige login
+para baixar dados pelo DVC: qualquer conta gratuita serve. Gere um token em
+*User Settings → Tokens* e configure as credenciais com `--local`, que grava em
+`.dvc/config.local` (ignorado pelo Git), de modo que o token nunca vai para o repositório:
 
 ```bash
-poetry run dvc pull              # baixa o dataset do remote
+poetry run dvc remote modify dagshub --local auth basic
+poetry run dvc remote modify dagshub --local user <usuario-dagshub>
+poetry run dvc remote modify dagshub --local password <token>
+poetry run dvc pull              # baixa o dataset (e os outputs do pipeline) do remote
 ```
 
-Sem acesso ao remote local (ex.: clone em outra máquina), recrie-o a partir do Kaggle:
+Sem conta no DagsHub, o dataset público também pode ser obtido no Kaggle:
 
 ```bash
 # 1. Baixe online_shoppers_intention.csv do Kaggle e salve em data/raw/
 # 2. Confira se o hash bate com o versionado (md5 em data/raw/*.dvc):
 md5sum data/raw/online_shoppers_intention.csv
-# 3. Crie o remote local e envie os dados:
-mkdir -p ../dvc-storage && poetry run dvc push
+# 3. Rode o pipeline normalmente (dvc repro)
 ```
+
+Para enviar novas versões de dados ou outputs (exige permissão de escrita no repositório):
+`poetry run dvc push`.
 
 ## Pipeline
 
@@ -186,8 +194,8 @@ git add dvc.lock reports/ && git commit -m "chore: reexecuta pipeline no Docker"
 ```
 
 - O `trainer` monta o repositório em `/app`: dados do DVC, `models/` e `reports/` ficam no host.
-  O remote local (`../dvc-storage`) também é montado, então `dvc pull`/`dvc push` funcionam no
-  container: `docker compose run --rm trainer dvc pull`.
+  As credenciais do DagsHub em `.dvc/config.local` chegam junto com essa montagem, então
+  `dvc pull`/`dvc push` funcionam no container: `docker compose run --rm trainer dvc pull`.
 - O `trainer` roda com `init: true`, para que o `dvc` não seja o PID 1. Se um container for
   morto no meio do pipeline e o DVC acusar lock ativo, apague `.dvc/tmp/rwlock`.
 - O servidor MLflow usa SQLite + artefatos no volume `mlflow-data` e `--serve-artifacts`, então

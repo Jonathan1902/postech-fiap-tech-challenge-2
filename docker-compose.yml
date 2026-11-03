@@ -41,10 +41,9 @@ services:
       mlflow:
         condition: service_healthy
     # Código, dados (DVC) e relatórios ficam no host: os outputs do pipeline voltam para o repo.
-    # O remote local do DVC (../dvc-storage) resolve para /dvc-storage dentro do container.
+    # As credenciais do remote DagsHub (.dvc/config.local) chegam pela mesma montagem.
     volumes:
       - .:/app
-      - ../dvc-storage:/dvc-storage
 
   api:
     build:
