@@ -1,4 +1,4 @@
 [core]
-    remote = local
-['remote "local"']
-    url = ../../dvc-storage
+    remote = dagshub
+['remote "dagshub"']
+    url = https://dagshub.com/Jonathan1902/postech-fiap-tech-challenge-2.dvc
